@@ -1,6 +1,6 @@
 from LocalEmbedding import LocalEmbedding
 
 embedder = LocalEmbedding()
-sample = "This is a sample text"
-embedding = embedder.get_text_embedding(sample)
-print(embedding)
+sample = ["This is a sample text", "This is another sample text"]
+embedding = embedder._get_text_embeddings(sample)
+print(len(embedding), len(embedding[0]))

@@ -9,7 +9,6 @@ from together import Together
 from dotenv import load_dotenv
 from typing import Optional, List, Any, Dict
 
-os.chdir("../")
 load_dotenv()
 
 client = Together()
