@@ -51,7 +51,7 @@ class LocalEmbedding(BaseEmbedding):
         embeddings = get_embeddings(text, self._model)
         return embeddings.tolist()
     
-    def _get_text_embeddings(self, texts):
+    def _get_text_embeddings(self, texts: List[str]) -> List[List[float]]:
         embeddings = []
         for text in texts:
             embeddings.append(self._get_text_embedding(text))
