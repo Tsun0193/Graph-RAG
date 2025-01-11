@@ -32,7 +32,7 @@ load_dotenv()
 
 def instantiate(
     datapath: str,
-    include_embeddings: bool = False,
+    include_embeddings: bool = True,
     max_triplets_per_chunk: int = 3,
     username: str = os.environ["NEO4J_USERNAME"],
     password: str = os.environ["NEO4J_PASSWORD"],
@@ -46,7 +46,7 @@ def instantiate(
         print(f"Error processing data: {e}")
         sys.exit(1)
 
-    chunks = chunks[:10]
+    chunks = chunks[0:2]
     print(len(chunks))
 
     if embedding_model_name:
@@ -64,11 +64,11 @@ def instantiate(
         password=password,
         url=url
     )
-    print("Configurations loaded with username: {username} at url: {url}")
+    print(f"Configurations loaded with username: {username} at url: {url}")
 
     storage_context = StorageContext.from_defaults(graph_store=graph_store)
 
-    index = KnowledgeGraphIndex(
+    index = PropertyGraphIndex(
         nodes=chunks,
         llm=llm,
         embed_model=embedder,
@@ -85,9 +85,11 @@ if __name__ == "__main__":
     print(os.getcwd())
     parser = ArgumentParser()
     parser.add_argument("--datapath", type=str, required=True)
-    parser.add_argument("--embeddings", type=bool, default=False)
+    parser.add_argument("--embeddings", type=bool, default=True)
     parser.add_argument("--max_triplets_per_chunk", type=int, default=2)
     args = parser.parse_args()
 
-    instantiate(args.datapath, args.embeddings, args.max_triplets_per_chunk)
+    instantiate(datapath=args.datapath, 
+                include_embeddings=args.embeddings, 
+                max_triplets_per_chunk=args.max_triplets_per_chunk)
     print("Indexing complete!")
