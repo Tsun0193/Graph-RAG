@@ -30,7 +30,7 @@ CREATE_QUERY = """
 MERGE (chunk: Chunk {id: $id})
 ON CREATE SET 
     chunk.length = $length,
-    chunk.fufll_text = $full_text
+    chunk.full_text = $full_text
 WITH chunk
 UNWIND $keywords AS keyword
 MERGE (k: Keyword {name: keyword})
