@@ -69,6 +69,7 @@ def process_jsonl_data(datapath: str,
         })
 
     print(f"Processed {len(processed_chunks)} chunks")
+    return processed_chunks
 
 if __name__ == "__main__":
     pass

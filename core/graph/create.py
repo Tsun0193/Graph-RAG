@@ -58,17 +58,17 @@ def instantiate(
 
     for chunk in chunks:
         graph_store.query(CREATE_QUERY, {
-            "id": chunk.metadata["id"],
-            "length": chunk.metadata["length"],
-            "full_text": chunk.text,
-            "keywords": chunk.metadata["keywords"]
+            "id": chunk["metadata"]["id"],
+            "length": chunk["metadata"]["length"],
+            "full_text": chunk["text"],
+            "keywords": chunk["metadata"]["keywords"]
         })
     print(f"Finish indexing {len(chunks)} nodes")
 
     graph_store.query(
         """
         CREATE CONSTRAINT unique_chunk IF NOT EXISTS
-        FOR (chunk:Chunk) REQUIRE c.id IS UNIQUE
+        FOR (chunk:Chunk) REQUIRE chunk.id IS UNIQUE
         """
     )
     print("Unique constraint created")
