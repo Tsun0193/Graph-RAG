@@ -9,18 +9,14 @@ sys.path.append('/home/tsunn/Workspace/iai-lab/sosci/codes/Graph-RAG')
 
 from argparse import ArgumentParser
 from dotenv import load_dotenv
-from llama_index.llms.openai import OpenAI
+from typing import List
 from llama_index.core import (
     Settings,
     Document, get_response_synthesizer,
     KnowledgeGraphIndex, PropertyGraphIndex,
     StorageContext
 )
-from llama_index.core.node_parser import SentenceSplitter
 from llama_index.graph_stores.neo4j import Neo4jGraphStore
-from core.data.processing import process_data
-from embeddings.LocalEmbedding import LocalEmbedding
-from llm.TogetherLLM import TogetherLLM
 
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -29,35 +25,29 @@ logging.getLogger("llama_index").setLevel(logging.INFO)
 nest_asyncio.apply()
 load_dotenv()
 
+CREATE_QUERY = """
+MERGE (chunk: Chunk {id: $id})
+ON CREATE SET 
+    chunk.length = $length,
+    chunk.fufll_text = $full_text
+WITH chunk
+UNWIND $keywords AS keyword
+MERGE (k: Keyword {name: keyword})
+MERGE (chunk)-[:HAS_KEYWORD]->(k)
+RETURN chunk
+"""
 
 def instantiate(
-    datapath: str,
-    include_embeddings: bool = True,
-    max_triplets_per_chunk: int = 3,
+    chunks: List[Document] = None,
     username: str = os.environ["NEO4J_USERNAME"],
     password: str = os.environ["NEO4J_PASSWORD"],
     url: str = os.environ["NEO4J_URI"],
-    embedding_model_name: str = None,
-    llm_model_name: str = None,
+    embedding_model_name: str = None
 ) -> None:
-    try:
-        chunks = process_data(datapath)
-    except Exception as e:
-        print(f"Error processing data: {e}")
-        sys.exit(1)
-
-    chunks = chunks[0:2]
-    print(len(chunks))
-
-    if embedding_model_name:
-        embedder = LocalEmbedding(model=embedding_model_name)
-    else:
-        embedder = LocalEmbedding()
-
-    if llm_model_name:
-        llm = TogetherLLM(model=llm_model_name)
-    else:
-        llm = TogetherLLM()
+    assert chunks, "Chunks must be provided"
+    assert username, "Username must be provided"
+    assert password, "Password must be provided"
+    assert url, "URL must be provided"
 
     graph_store = Neo4jGraphStore(
         username=username,
@@ -66,19 +56,22 @@ def instantiate(
     )
     print(f"Configurations loaded with username: {username} at url: {url}")
 
-    storage_context = StorageContext.from_defaults(graph_store=graph_store)
-
-    index = PropertyGraphIndex(
-        nodes=chunks,
-        llm=llm,
-        embed_model=embedder,
-        storage_context=storage_context,
-        include_embeddings=include_embeddings,
-        max_triplets_per_chunk=max_triplets_per_chunk,
-        show_progress=True
-    )
-
+    for chunk in chunks:
+        graph_store.query(CREATE_QUERY, {
+            "id": chunk.metadata["id"],
+            "length": chunk.metadata["length"],
+            "full_text": chunk.text,
+            "keywords": chunk.metadata["keywords"]
+        })
     print(f"Finish indexing {len(chunks)} nodes")
+
+    graph_store.query(
+        """
+        CREATE CONSTRAINT unique_chunk IF NOT EXISTS
+        FOR (chunk:Chunk) REQUIRE c.id IS UNIQUE
+        """
+    )
+    print("Unique constraint created")
 
 
 if __name__ == "__main__":
@@ -86,7 +79,6 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--datapath", type=str, required=True)
     parser.add_argument("--embeddings", type=bool, default=True)
-    parser.add_argument("--max_triplets_per_chunk", type=int, default=2)
     args = parser.parse_args()
 
     instantiate(datapath=args.datapath, 
