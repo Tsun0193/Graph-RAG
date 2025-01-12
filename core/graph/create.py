@@ -9,6 +9,7 @@ sys.path.append('/home/tsunn/Workspace/iai-lab/sosci/codes/Graph-RAG')
 
 from argparse import ArgumentParser
 from dotenv import load_dotenv
+from tqdm.auto import tqdm
 from typing import List
 from llama_index.core import (
     Settings,
@@ -56,7 +57,7 @@ def instantiate(
     )
     print(f"Configurations loaded with username: {username} at url: {url}")
 
-    for chunk in chunks:
+    for chunk in tqdm(chunks):
         graph_store.query(CREATE_QUERY, {
             "id": chunk["metadata"]["id"],
             "length": chunk["metadata"]["length"],
