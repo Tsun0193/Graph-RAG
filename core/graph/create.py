@@ -10,7 +10,7 @@ sys.path.append('/home/tsunn/Workspace/iai-lab/sosci/codes/Graph-RAG')
 from argparse import ArgumentParser
 from dotenv import load_dotenv
 from tqdm.auto import tqdm
-from typing import List
+from typing import List, Dict
 from llama_index.core import (
     Settings,
     Document, get_response_synthesizer,
@@ -39,7 +39,7 @@ RETURN chunk
 """
 
 def instantiate(
-    chunks: List[Document] = None,
+    chunks: List[Dict],
     username: str = os.environ["NEO4J_USERNAME"],
     password: str = os.environ["NEO4J_PASSWORD"],
     url: str = os.environ["NEO4J_URI"],
