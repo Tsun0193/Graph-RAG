@@ -6,35 +6,8 @@ from llama_index.core.llms import (
 )
 from llama_index.core.llms.callbacks import llm_completion_callback
 from typing import Optional, List, Any, Dict
+from pydantic import Field
 from ctransformers import AutoModelForCausalLM
-
-"""
-TODO: Remove the instantiation after testing module.
-"""
-# llm = AutoModelForCausalLM.from_pretrained("TheBloke/Mistral-7B-Instruct-v0.1-GGUF", model_file="mistral-7b-instruct-v0.1.Q4_K_M.gguf", model_type="mistral")
-
-def get_response(query,
-                 model: AutoModelForCausalLM,
-                 history: Optional[List[Dict[str, Any]]] = None,
-                 **kwargs) -> str:
-    messages = ""
-    if history:
-        for item in history:
-            if item["role"] == "user":
-                messages += f"<s>[INST] {item['content']} [/INST]</s>\n"
-            elif item["role"] == "assistant":
-                messages += f"{item['content']}\n"
-            else:
-                continue # Ignore system messages
-
-    messages += f"<s>[INST] {query} [/INST]</s>"
-
-    try:
-        response = model(messages)
-    except Exception as e:
-        raise Exception(f"Error: {str(e)}")
-    
-    return response
 
 
 class Mistral(CustomLLM):
@@ -43,7 +16,7 @@ class Mistral(CustomLLM):
     """
 
     model: str = "TheBloke/Mistral-7B-Instruct-v0.1-GGUF"
-    llm: AutoModelForCausalLM = AutoModelForCausalLM.from_pretrained(model, model_file="mistral-7b-instruct-v0.1.Q4_K_M.gguf", model_type="mistral")
+    llm: Optional[AutoModelForCausalLM] = Field(default=None, init=False, repr=False)
 
     def __init__(self,
                  **kwargs) -> None:
@@ -51,9 +24,35 @@ class Mistral(CustomLLM):
         Initialize the Mistral class.
         """
         super().__init__(**kwargs)
+        object.__setattr__(self, "llm", AutoModelForCausalLM.from_pretrained(
+            self.model, 
+            model_file="mistral-7b-instruct-v0.1.Q4_K_M.gguf", 
+            model_type="mistral"
+        ))
         print(f"Mistral LLM initialized.")
 
-    
+    def get_response(self, query,
+                     history: Optional[List[Dict[str, Any]]] = None,
+                     **kwargs) -> str:
+        messages = ""
+        if history:
+            for item in history:
+                if item["role"] == "user":
+                    messages += f"<s>[INST] {item['content']} [/INST]</s>\n"
+                elif item["role"] == "assistant":
+                    messages += f"{item['content']}\n"
+                else:
+                    continue # Ignore system messages
+
+        messages += f"<s>[INST] {query} [/INST]</s>"
+
+        try:
+            response = self.llm(messages)
+        except Exception as e:
+            raise Exception(f"Error: {str(e)}")
+        
+        return response
+
     @property
     def metadata(self) -> LLMMetadata:
         """
@@ -71,7 +70,7 @@ class Mistral(CustomLLM):
         """
         Complete the prompt using the Mistral LLM.
         """
-        response = get_response(prompt, history=history, model=self.llm, **kwargs)
+        response = self.get_response(prompt, history=history, model=self.llm, **kwargs)
         additional_kwargs = {
             "model": "TheBloke/Mistral-7B-Instruct-v0.1-GGUF"
         }
@@ -85,7 +84,7 @@ class Mistral(CustomLLM):
         """
         Stream completion endpoint for the Mistral LLM.
         """
-        response = get_response(prompt, model = self.llm, stream = True, **kwargs)
+        response = self.get_response(prompt, model = self.llm, stream = True, **kwargs)
         accumulated_text = ""
         for char in response:
             accumulated_text += char
