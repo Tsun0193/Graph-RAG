@@ -19,20 +19,6 @@ logging.getLogger("llama_index").setLevel(logging.INFO)
 nest_asyncio.apply()
 load_dotenv()
 
-stopwords = set([
-    "the", "a", "an", "and", "or", "but", "about", "above", "after", "along", "amid", "among", "as", "at", "by", "for", "from", "in", "into", "like", "minus", "near", "of", "off", "on", "onto", "out", "over", "past", "per", "plus", "since", "till", "to", "under", "until", "up", "via", "vs", "with", "that", "can", "cannot", "could", "may", "might", "must", "need", "ought", "shall", "should", "will", "would", "have", "had", "has", "having", "be", "is", "am", "are", "was", "were", "being", "been", "get", "gets", "got", "gotten", "getting", "seem", "seeming", "seems", "seemed", "less", "least", "many", "more", "most", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "can", "will", "just", "don", "should", "now"
-])
-
-def extract_keywords(text: str, top_n: int = 5) -> List[str]:
-    """
-    Extract keywords from a given text.
-    """
-    words = re.findall(r'\w+', text.lower())
-    filtered_words = [word for word in words if word not in stopwords and len(word) > 2]
-
-    return [word for word, _ in Counter(filtered_words).most_common(top_n)]
-
-
 def process_jsonl_data(datapath: str, 
                        **kwargs) -> List[Dict]:
     """
@@ -63,7 +49,6 @@ def process_jsonl_data(datapath: str,
             "text": chunk.text,
             "metadata": {
                 "id": i,
-                "keywords": extract_keywords(chunk.text),
                 "length": len(chunk.text)
             }
         })
